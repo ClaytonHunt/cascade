@@ -1,0 +1,195 @@
+{
+  "name": "cascade",
+  "displayName": "Cascade",
+  "description": "Hierarchical planning and kanban workflow for AI-assisted development",
+  "version": "0.1.0",
+  "publisher": "cascade",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/lineage"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:**/plans/**",
+    "workspaceContains:**/specs/**"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cascade",
+          "title": "Cascade",
+          "icon": "resources/cascade-icon.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "cascade.refresh",
+        "title": "Cascade: Refresh TreeView"
+      },
+      {
+        "command": "cascade.showCacheStats",
+        "title": "Cascade: Show Cache Statistics"
+      },
+      {
+        "command": "cascade.changeStatus",
+        "title": "Change Status",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "cascade.createChildItem",
+        "title": "Create Child Item",
+        "icon": "$(add)"
+      },
+      {
+        "command": "cascade.openFileContext",
+        "title": "Open File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "cascade.copyItemNumber",
+        "title": "Copy Item Number",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "cascade.revealInExplorer",
+        "title": "Reveal in Explorer",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "cascade.toggleArchived",
+        "title": "Toggle Archived Items",
+        "category": "Cascade",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "cascade.toggleViewMode",
+        "title": "Toggle View Mode (Status/Hierarchy)",
+        "category": "Cascade",
+        "icon": "$(list-tree)"
+      }
+    ],
+    "views": {
+      "cascade": [
+        {
+          "id": "cascadeView",
+          "name": "Planning Items"
+        }
+      ]
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "cascade.changeStatus",
+          "when": "view == cascadeView && (viewItem == story || viewItem == bug)",
+          "group": "1_modification@1"
+        },
+        {
+          "command": "cascade.createChildItem",
+          "when": "view == cascadeView && (viewItem == epic || viewItem == feature)",
+          "group": "1_modification@2"
+        },
+        {
+          "command": "cascade.openFileContext",
+          "when": "view == cascadeView && viewItem != status-group",
+          "group": "2_navigation@1"
+        },
+        {
+          "command": "cascade.copyItemNumber",
+          "when": "view == cascadeView && viewItem != status-group",
+          "group": "3_utils@1"
+        },
+        {
+          "command": "cascade.revealInExplorer",
+          "when": "view == cascadeView && viewItem != status-group",
+          "group": "3_utils@2"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "cascade.toggleArchived",
+          "when": "view == cascadeView",
+          "group": "navigation"
+        },
+        {
+          "command": "cascade.toggleViewMode",
+          "when": "view == cascadeView",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "cascade.changeStatus",
+        "key": "ctrl+shift+s",
+        "when": "focusedView == cascadeView && (viewItem == story || viewItem == bug)"
+      },
+      {
+        "command": "cascade.createChildItem",
+        "key": "ctrl+shift+n",
+        "when": "focusedView == cascadeView && (viewItem == epic || viewItem == feature)"
+      },
+      {
+        "command": "cascade.copyItemNumber",
+        "key": "ctrl+c",
+        "when": "focusedView == cascadeView && viewItem != status-group"
+      }
+    ],
+    "configuration": {
+      "title": "Cascade",
+      "properties": {
+        "cascade.refreshDebounceDelay": {
+          "type": "number",
+          "default": 300,
+          "minimum": 0,
+          "maximum": 5000,
+          "markdownDescription": "Delay in milliseconds before refreshing TreeView after file changes. Higher values reduce CPU usage during batch operations (e.g., git merge) but increase latency. Set to `0` to disable debouncing (immediate refresh)."
+        },
+        "cascade.enableGitOperationDetection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable git operation detection for optimized TreeView refresh during git operations (checkout, merge, pull, rebase)."
+        },
+        "cascade.gitOperationDebounceDelay": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "maximum": 5000,
+          "description": "Delay in milliseconds to wait after last git metadata change before triggering TreeView refresh. Increase for slower systems or large repositories."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "test": "node ./dist/test/runTest.js",
+    "test-compile": "tsc -p ./",
+    "pretest": "npm run test-compile && npm run compile",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-electron": "^2.3.4",
+    "@vscode/vsce": "^2.21.0",
+    "esbuild": "^0.19.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
