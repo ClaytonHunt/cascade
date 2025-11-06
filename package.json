@@ -69,12 +69,6 @@
         "title": "Toggle Archived Items",
         "category": "Cascade",
         "icon": "$(archive)"
-      },
-      {
-        "command": "cascade.toggleViewMode",
-        "title": "Toggle View Mode (Status/Hierarchy)",
-        "category": "Cascade",
-        "icon": "$(list-tree)"
       }
     ],
     "views": {
@@ -116,11 +110,6 @@
       "view/title": [
         {
           "command": "cascade.toggleArchived",
-          "when": "view == cascadeView",
-          "group": "navigation"
-        },
-        {
-          "command": "cascade.toggleViewMode",
           "when": "view == cascadeView",
           "group": "navigation"
         }

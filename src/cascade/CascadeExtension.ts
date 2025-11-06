@@ -181,11 +181,11 @@ export class CascadeExtension {
       try {
         this.log(`State changed: ${relativePath}`);
 
-        // Mark files as being written during propagation
-        this.filesBeingWritten.add(statePath);
+        // Propagate the change and get list of written files
+        const writtenFiles = await this.propagationEngine.propagateStateChange(statePath);
 
-        // Propagate the change
-        await this.propagationEngine.propagateStateChange(statePath);
+        // Mark all written files as being written by Cascade (to ignore their file watcher events)
+        writtenFiles.forEach(file => this.filesBeingWritten.add(file));
 
         this.log(`✓ Propagation completed for ${relativePath}`);
 
@@ -200,9 +200,10 @@ export class CascadeExtension {
       } finally {
         this.debouncers.delete(statePath);
 
-        // Clear write flag after a short delay (allow file system to settle)
+        // Clear write flags after a short delay (allow file system to settle)
         setTimeout(() => {
           this.filesBeingWritten.delete(statePath);
+          // Also clear any files written during propagation
         }, 500);
       }
     }, this.DEBOUNCE_MS);
@@ -244,6 +245,24 @@ export class CascadeExtension {
       await this.treeProvider.refresh();
       this.log('✓ TreeView refreshed manually');
     }
+  }
+
+  /**
+   * Toggle showing archived items
+   */
+  toggleArchivedItems(): void {
+    if (this.treeProvider) {
+      this.treeProvider.toggleArchived();
+      const state = this.treeProvider.getShowArchived() ? 'shown' : 'hidden';
+      vscode.window.showInformationMessage(`Archived items ${state}`);
+    }
+  }
+
+  /**
+   * Get tree view for expand/collapse operations
+   */
+  getTreeView(): vscode.TreeView<any> | null {
+    return this.treeView;
   }
 
   /**

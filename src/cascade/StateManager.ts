@@ -122,8 +122,13 @@ export class StateManager {
     const planned = childArray.filter(c => c.status === 'planned').length;
     const blocked = childArray.filter(c => c.status === 'blocked').length;
 
-    // Calculate percentage: (completed / total) * 100
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    // Calculate percentage as average of child progress percentages
+    // This properly reflects partial completion (e.g., child at 67% contributes 67% to average)
+    let percentage = 0;
+    if (total > 0) {
+      const totalProgress = childArray.reduce((sum, child) => sum + (child.progress || 0), 0);
+      percentage = Math.round(totalProgress / total);
+    }
 
     return {
       total_items: total,

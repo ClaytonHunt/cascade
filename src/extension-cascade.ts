@@ -127,6 +127,15 @@ function registerCommands(context: vscode.ExtensionContext) {
       }
     })
   );
+
+  // Command: Toggle Archived Items
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cascade.toggleArchived', () => {
+      if (cascadeExtension) {
+        cascadeExtension.toggleArchivedItems();
+      }
+    })
+  );
 }
 
 /**

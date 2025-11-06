@@ -6,7 +6,7 @@
     "completed": 2,
     "in_progress": 1,
     "planned": 0,
-    "percentage": 67
+    "percentage": 83
   },
   "children": {
     "S0001": {
@@ -22,5 +22,5 @@
       "progress": 100
     }
   },
-  "updated": "2025-11-06T17:50:05.694Z"
+  "updated": "2025-11-06T20:23:25.619Z"
 }

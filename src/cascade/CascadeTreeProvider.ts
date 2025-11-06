@@ -45,6 +45,9 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
   private itemCache = new Map<string, CascadeTreeItem>();
   private childrenCache = new Map<string, string[]>(); // parent ID -> child IDs
 
+  // Filter settings
+  private showArchived = false;
+
   constructor(
     cascadeDir: string,
     registryManager: RegistryManager,
@@ -89,15 +92,31 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
 
       // Build item cache and children map
       for (const [id, registryItem] of Object.entries(items)) {
-        // Read progress from state file
-        const progress = await this.getItemProgress(id, registryItem.path);
+        let status = registryItem.status;
+        let progress = 0;
+
+        if (registryItem.type === 'Task') {
+          // Tasks don't have state.json - read from parent state
+          const parentStateData = await this.getParentState(registryItem.parent);
+          if (parentStateData && parentStateData.children[id]) {
+            status = parentStateData.children[id].status;
+            progress = parentStateData.children[id].progress;
+          }
+        } else {
+          // Non-task items have their own state.json - read status and progress from it
+          const stateData = await this.getItemState(id, registryItem.path);
+          if (stateData) {
+            status = stateData.status;
+            progress = stateData.progress?.percentage || 0;
+          }
+        }
 
         // Create tree item
         const treeItem: CascadeTreeItem = {
           id: registryItem.id,
           type: registryItem.type,
           title: registryItem.title,
-          status: registryItem.status,
+          status: status,
           progress: progress,
           parent: registryItem.parent,
           filePath: path.join(this.cascadeDir, registryItem.path)
@@ -121,9 +140,9 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
   }
 
   /**
-   * Get progress percentage for a work item
+   * Get state.json data for a work item (used for non-Task items)
    */
-  private async getItemProgress(itemId: string, itemPath: string): Promise<number> {
+  private async getItemState(itemId: string, itemPath: string): Promise<any> {
     try {
       // Determine state file path
       const itemDir = path.dirname(path.join(this.cascadeDir, itemPath));
@@ -131,19 +150,45 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
 
       // Check if state file exists
       if (!fs.existsSync(stateFilePath)) {
-        // No state file - could be a leaf task
-        return 0;
+        return null;
       }
 
-      // Load state file
-      const state = await this.stateManager.loadState(stateFilePath);
-
-      // Return progress percentage
-      return state.progress?.percentage || 0;
+      // Load and return state file
+      return await this.stateManager.loadState(stateFilePath);
 
     } catch (error) {
-      // If state file doesn't exist or is invalid, return 0
-      return 0;
+      return null;
+    }
+  }
+
+  /**
+   * Get parent state.json data for reading Task status/progress
+   */
+  private async getParentState(parentId: string | null): Promise<any> {
+    if (!parentId) {
+      return null;
+    }
+
+    try {
+      // Get parent item from registry
+      const registry = await this.registryManager.loadRegistry();
+      const parentItem = registry.work_items[parentId];
+      if (!parentItem) {
+        return null;
+      }
+
+      // Get parent state file path
+      const parentDir = path.dirname(path.join(this.cascadeDir, parentItem.path));
+      const stateFilePath = path.join(parentDir, 'state.json');
+
+      if (!fs.existsSync(stateFilePath)) {
+        return null;
+      }
+
+      // Load and return parent state
+      return await this.stateManager.loadState(stateFilePath);
+    } catch (error) {
+      return null;
     }
   }
 
@@ -153,13 +198,24 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
   getTreeItem(element: CascadeTreeItem): vscode.TreeItem {
     const hasChildren = this.childrenCache.has(element.id);
 
+    // Determine initial collapse state
+    let collapsibleState = vscode.TreeItemCollapsibleState.None;
+    if (hasChildren) {
+      // Completed items start collapsed, non-completed start expanded
+      const isCompleted = element.status.toLowerCase() === 'completed';
+      collapsibleState = isCompleted
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.Expanded;
+    }
+
     const treeItem = new vscode.TreeItem(
       this.formatLabel(element),
-      hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+      collapsibleState
     );
 
-    // Set icon based on type
-    treeItem.iconPath = new vscode.ThemeIcon(this.getIconForType(element.type));
+    // Set icon based on type with progress-based color
+    const iconColor = this.getProgressColor(element.progress);
+    treeItem.iconPath = new vscode.ThemeIcon(this.getIconForType(element.type), iconColor);
 
     // Set tooltip
     treeItem.tooltip = this.formatTooltip(element);
@@ -181,6 +237,30 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
   }
 
   /**
+   * Get color based on progress percentage
+   * 0% = blue
+   * 1-100% = red -> yellow -> green gradient
+   */
+  private getProgressColor(progress: number): vscode.ThemeColor {
+    if (progress === 0) {
+      // 0% = Blue (not started)
+      return new vscode.ThemeColor('charts.blue');
+    } else if (progress < 50) {
+      // 1-49% = Red to Yellow gradient
+      return new vscode.ThemeColor('charts.red');
+    } else if (progress < 75) {
+      // 50-74% = Yellow
+      return new vscode.ThemeColor('charts.yellow');
+    } else if (progress < 100) {
+      // 75-99% = Yellow to Green gradient
+      return new vscode.ThemeColor('charts.orange');
+    } else {
+      // 100% = Green (completed)
+      return new vscode.ThemeColor('charts.green');
+    }
+  }
+
+  /**
    * Get children of a tree item
    */
   async getChildren(element?: CascadeTreeItem): Promise<CascadeTreeItem[]> {
@@ -193,13 +273,41 @@ export class CascadeTreeProvider implements vscode.TreeDataProvider<CascadeTreeI
     const parentId = element ? element.id : 'ROOT';
     const childIds = this.childrenCache.get(parentId) || [];
 
-    // Convert IDs to tree items
+    // Convert IDs to tree items and filter based on settings
     const children = childIds
       .map(id => this.itemCache.get(id))
       .filter((item): item is CascadeTreeItem => item !== undefined)
+      .filter(item => this.shouldShowItem(item))
       .sort((a, b) => this.compareItems(a, b));
 
     return children;
+  }
+
+  /**
+   * Determine if an item should be shown based on filter settings
+   */
+  private shouldShowItem(item: CascadeTreeItem): boolean {
+    // Filter archived items if showArchived is false
+    if (!this.showArchived && item.status.toLowerCase() === 'archived') {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Toggle showing archived items
+   */
+  toggleArchived(): void {
+    this.showArchived = !this.showArchived;
+    this.outputChannel.appendLine(`[TreeView] Archived items: ${this.showArchived ? 'shown' : 'hidden'}`);
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Get current archived toggle state
+   */
+  getShowArchived(): boolean {
+    return this.showArchived;
   }
 
   /**

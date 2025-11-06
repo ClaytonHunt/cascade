@@ -46,13 +46,16 @@ export class StatePropagationEngine {
    * Called when a state.json file changes
    *
    * @param childStatePath - Absolute path to changed state.json file
+   * @returns Array of file paths that were written during propagation
    */
-  async propagateStateChange(childStatePath: string): Promise<void> {
+  async propagateStateChange(childStatePath: string): Promise<string[]> {
     // Reset propagation chain for new propagation
     this.propagationChain.clear();
+    const writtenFiles: string[] = [];
 
     try {
-      await this.propagateRecursive(childStatePath);
+      await this.propagateRecursive(childStatePath, writtenFiles);
+      return writtenFiles;
     } catch (error) {
       console.error(`State propagation failed for ${childStatePath}:`, error);
       throw error;
@@ -65,7 +68,7 @@ export class StatePropagationEngine {
   /**
    * Recursive propagation implementation
    */
-  private async propagateRecursive(childStatePath: string): Promise<void> {
+  private async propagateRecursive(childStatePath: string, writtenFiles: string[]): Promise<void> {
     // Step 1: Load child state
     let childState: StateData;
     try {
@@ -130,6 +133,7 @@ export class StatePropagationEngine {
     // Step 9: Write parent state
     try {
       await this.stateManager.saveState(parentStatePath, updatedParentState);
+      writtenFiles.push(parentStatePath); // Track written file
       console.log(`Propagated ${childId} → ${parentId} (${updatedParentState.progress.percentage}% complete)`);
     } catch (error) {
       console.error(`Failed to save parent state ${parentStatePath}:`, error);
@@ -137,7 +141,7 @@ export class StatePropagationEngine {
     }
 
     // Step 10: Recursively propagate to grandparent
-    await this.propagateRecursive(parentStatePath);
+    await this.propagateRecursive(parentStatePath, writtenFiles);
   }
 
   /**

@@ -6,7 +6,7 @@
     "completed": 1,
     "in_progress": 1,
     "planned": 0,
-    "percentage": 50
+    "percentage": 84
   },
   "children": {
     "PH0001": {
@@ -18,5 +18,5 @@
       "progress": 67
     }
   },
-  "updated": "2025-11-06T17:50:05.693Z"
+  "updated": "2025-11-06T20:23:03.425Z"
 }
