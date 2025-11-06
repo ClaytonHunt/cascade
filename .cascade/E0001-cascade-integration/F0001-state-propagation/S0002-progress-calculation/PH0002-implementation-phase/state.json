@@ -1,0 +1,26 @@
+{
+  "id": "PH0002",
+  "status": "in-progress",
+  "progress": {
+    "total_items": 3,
+    "completed": 2,
+    "in_progress": 1,
+    "planned": 0,
+    "percentage": 67
+  },
+  "children": {
+    "T0008": {
+      "status": "completed",
+      "progress": 100
+    },
+    "T0009": {
+      "status": "in-progress",
+      "progress": 0
+    },
+    "T0010": {
+      "status": "completed",
+      "progress": 100
+    }
+  },
+  "updated": "2025-11-06T13:32:29.837Z"
+}

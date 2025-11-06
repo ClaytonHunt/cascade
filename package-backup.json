@@ -19,7 +19,7 @@
     "workspaceContains:**/plans/**",
     "workspaceContains:**/specs/**"
   ],
-  "main": "./dist/extension-cascade.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [

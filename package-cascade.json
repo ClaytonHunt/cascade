@@ -1,0 +1,62 @@
+{
+  "name": "cascade",
+  "displayName": "Cascade",
+  "description": "Hierarchical work item tracking with automated state propagation",
+  "version": "0.2.0",
+  "publisher": "cascade",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/cascade"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:**/.cascade/**"
+  ],
+  "main": "./dist/extension-cascade.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cascade.refresh",
+        "title": "Cascade: Refresh"
+      },
+      {
+        "command": "cascade.validateHierarchy",
+        "title": "Cascade: Validate Hierarchy"
+      },
+      {
+        "command": "cascade.showCacheStats",
+        "title": "Cascade: Show Cache Statistics"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "test": "node ./dist/test/runTest.js",
+    "test-compile": "tsc -p ./",
+    "pretest": "npm run test-compile && npm run compile",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-electron": "^2.3.4",
+    "@vscode/vsce": "^2.21.0",
+    "esbuild": "^0.19.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "S0001",
+  "status": "completed",
+  "progress": {
+    "total_items": 4,
+    "completed": 4,
+    "in_progress": 0,
+    "planned": 0,
+    "percentage": 100
+  },
+  "children": {
+    "T0001": {
+      "status": "completed",
+      "progress": 100
+    },
+    "T0002": {
+      "status": "completed",
+      "progress": 100
+    },
+    "T0003": {
+      "status": "completed",
+      "progress": 100
+    },
+    "T0004": {
+      "status": "completed",
+      "progress": 100
+    }
+  },
+  "updated": "2025-11-06T14:23:50.994Z"
+}
