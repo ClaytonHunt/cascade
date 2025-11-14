@@ -13,12 +13,30 @@
     "url": "https://github.com/ClaytonHunt/cascade/issues"
   },
   "homepage": "https://github.com/ClaytonHunt/cascade#readme",
+  "icon": "resources/cascade-icon.svg",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Visualization"
   ],
+  "keywords": [
+    "project management",
+    "work items",
+    "kanban",
+    "task tracking",
+    "hierarchy",
+    "planning",
+    "agile",
+    "scrum",
+    "epic",
+    "story"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onStartupFinished",
     "workspaceContains:**/.cascade/**"
