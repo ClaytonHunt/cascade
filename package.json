@@ -3,7 +3,7 @@
   "displayName": "Cascade",
   "description": "Hierarchical planning and kanban workflow for AI-assisted development",
   "version": "0.3.1",
-  "publisher": "ClaytonHunt",
+  "publisher": "claytonhunt",
   "license": "AGPL-3.0",
   "repository": {
     "type": "git",
