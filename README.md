@@ -1,159 +1,119 @@
-# Lineage Planning & Spec Status Extension
+# Cascade - Hierarchical Work Item Tracker
 
-VSCode extension providing visual status tracking for the Lineage planning and specification system. Displays hierarchical progress through the Cascade TreeView with status icons.
+Visual tracking for hierarchical work items with automatic state propagation. Track projects, epics, features, stories, and tasks in a unified TreeView with real-time progress updates.
 
 ## Features
 
-- **Cascade TreeView**: Hierarchical status visualization with icons for planning items (Epics, Features, Stories, Bugs)
-- **Spec Tracking**: Progress indicators for specification phases and tasks
-- **Frontmatter-Driven**: Reads status from YAML frontmatter in markdown files
-- **Real-Time Updates**: File system watching for instant status changes
-- **Archive Support**: Automatic detection of archived items via frontmatter status or directory location
+- 📊 **Hierarchical View**: Project → Epic → Feature → Story → Phase → Task
+- 🔄 **Auto State Propagation**: Child status updates automatically roll up to parents
+- 📈 **Progress Tracking**: Visual progress bars and percentages
+- 🎯 **Status Management**: Track work items through their lifecycle
+- 🔍 **Work Item Registry**: Centralized tracking via `.cascade/` directory
+- 🔔 **Real-Time Updates**: File watchers for instant synchronization
+- 🎨 **Theme Compatible**: Icons adapt to your VSCode theme
 
-### Archive Detection
+## Installation
 
-Cascade automatically detects archived planning items using two methods:
+### From VSIX (Local)
 
-1. **Frontmatter Status**: Items with `status: Archived` in frontmatter
-2. **Directory Location**: Items in `plans/archive/` directory
-
-#### Usage
-
-**Archive by Frontmatter:**
-```yaml
----
-item: S75
-title: Old Feature
-type: story
-status: Archived  # Marks item as archived
-priority: Low
----
-```
-
-**Archive by Moving File:**
 ```bash
-# Move file to archive directory
-mv plans/epic-05/story-75-old.md plans/archive/
+code --install-extension cascade-[version].vsix --force
 ```
 
-Both methods work independently - choose the workflow that fits your needs.
+Then reload VSCode: Ctrl+Shift+P → "Developer: Reload Window"
 
-#### Technical Details
+### From Marketplace (Coming Soon)
 
-- Path detection is case-insensitive (`Archive`, `ARCHIVE`, `archive` all work)
-- Works with nested paths: `plans/archive/epic-04/feature-16/story.md`
-- Cross-platform: Handles Windows (`\`) and Unix (`/`) path separators
-- Performance: < 0.01ms per item, efficient with 1000+ items
+Search for "Cascade" in VSCode Extensions marketplace.
 
-For implementation details, see `vscode-extension/src/treeview/archiveUtils.ts`.
+## Usage
 
-### Status Badges
+1. **Create `.cascade/` directory** in your workspace root
+2. **Add `work-item-registry.json`** with your work items:
+   ```json
+   {
+     "version": "1.0.0",
+     "work_items": {
+       "P0001": {
+         "id": "P0001",
+         "type": "Project",
+         "title": "My Project",
+         "status": "in-progress",
+         "parent": null,
+         "path": "P0001.md"
+       }
+     }
+   }
+   ```
+3. **View hierarchy** in the Cascade Activity Bar icon (left sidebar)
+4. **Track progress** - Updates propagate automatically!
 
-Planning items display visual status badges using VSCode's Codicon system. Badges appear in the TreeView description field with color-coded icons that automatically adapt to your active theme.
+## Requirements
 
-#### Badge Examples
+- VS Code 1.80.0 or higher
+- Workspace with `.cascade/` directory
 
-| Status      | Badge Display               | Icon Meaning              |
-|-------------|-----------------------------|---------------------------|
-| Not Started | ○ Not Started               | Empty circle (neutral)    |
-| In Planning | ● In Planning               | Filled circle (attention) |
-| Ready       | ● Ready                     | Filled circle (prepared)  |
-| In Progress | ⚙ In Progress              | Gear icon (active work)   |
-| Blocked     | ⊗ Blocked                   | Error icon (issue)        |
-| Completed   | ✓ Completed                 | Checkmark (success)       |
-| Archived    | 📦 Archived                 | Archive box (inactive)    |
+## Extension Settings
 
-**Note:** Icons shown above are approximations. Actual icons use VSCode Codicons and adapt to your theme colors.
+This extension contributes the following settings:
 
-#### Theme Compatibility
+* `cascade.refreshDebounceDelay`: Refresh delay in milliseconds (default: 300ms)
+* `cascade.enableGitOperationDetection`: Enable git operation detection (default: true)
+* `cascade.gitOperationDebounceDelay`: Git operation debounce delay (default: 500ms)
 
-Status badges have been validated in **Dark+** theme with excellent readability. The Codicon system ensures badges automatically adapt to both light and dark themes:
+## Known Issues
 
-- **Dark themes**: Light icons on dark background (high contrast)
-- **Light themes**: Dark icons on light background (automatic adaptation)
-- **Custom themes**: Badges inherit theme's semantic colors (errorForeground, testing.iconPassed, etc.)
+See [GitHub Issues](https://github.com/ClaytonHunt/cascade/issues) for current bugs and feature requests.
 
-**Tested Status Values:**
-- ✅ Not Started: Gray circle outline - Clear visibility
-- ✅ Ready: Green filled circle - Excellent contrast
-- ✅ In Progress: Blue gear icon - Highly visible
-- ✅ Completed: Green checkmark - Perfect success indicator
+## Contributing
 
-All tested badges achieve perfect readability (5/5 rating) in Dark+ theme. Light+ and custom themes should work correctly due to Codicon's automatic theme adaptation, though they have not been formally tested.
-
-#### Technical Details
-
-- **Implementation**: `vscode-extension/src/treeview/badgeRenderer.ts`
-- **Icon Format**: `$(icon-name) Status Text` (VSCode Codicon syntax)
-- **Theme System**: Automatic color adaptation via VSCode semantic tokens
-- **Performance**: Static mapping, < 0.01ms per badge render
-
-For detailed testing results, see `docs/badge-theme-testing.md`.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Development
 
-### Prerequisites
-
-- Node.js 16+
-- VSCode 1.80.0+
-
-### Setup
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Build extension:
-   ```bash
-   npm run compile
-   ```
-
-### Running
-
-Package and install extension locally:
 ```bash
+# Clone repository
+git clone https://github.com/ClaytonHunt/cascade.git
+cd cascade
+
+# Install dependencies
+npm install
+
+# Compile TypeScript
+npm run compile
+
+# Watch mode (auto-compile on changes)
+npm run watch
+
+# Package extension
 npm run package
-code --install-extension cascade-0.1.0.vsix --force
+
+# Install locally
+code --install-extension cascade-0.3.1.vsix --force
 ```
 
-Then reload VSCode window (Ctrl+Shift+P → "Developer: Reload Window")
+## License
 
-### Debugging
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE](LICENSE) file for details.
 
-- View extension logs in Output Channel ("Cascade")
-- For detailed debugging, use the local installation method above
-- Logs show activation, file processing, and cache statistics
+**Copyright (C) 2024-2025 Clayton Hunt**
 
-### Watch Mode
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-Run `npm run watch` for automatic rebuilds on file changes.
+## Release Notes
 
-## Project Structure
+### 0.3.1
+- Enhanced file watchers for real-time updates
+- Added support for markdown file and registry changes
+- Improved structure change detection
+- Better logging for debugging
 
-```
-vscode-extension/
-├── src/
-│   └── extension.ts       # Extension entry point
-├── dist/                  # Compiled output (gitignored)
-├── .vscode/
-│   ├── launch.json        # Debug configuration
-│   └── tasks.json         # Build tasks
-├── package.json           # Extension manifest
-├── tsconfig.json          # TypeScript configuration
-└── esbuild.js             # Build script
-```
+### 0.3.0
+- Initial release with `.cascade/` directory support
+- Hierarchical work item tracking
+- Automatic state propagation engine
+- TreeView visualization
 
-## Implementation Status
+---
 
-- ✅ **S36**: Extension Project Scaffold
-- ⏳ **S37**: Workspace Activation Logic
-- ⏳ **S38**: File System Watcher
-- ⏳ **S39**: YAML Frontmatter Parser
-- ⏳ **S40**: Frontmatter Cache Layer
-
-## Related Documentation
-
-- [Extension API](https://code.visualstudio.com/api)
-- [Epic E3](../plans/epic-03-vscode-planning-extension/epic.md)
-- [Feature F11](../plans/epic-03-vscode-planning-extension/feature-11-extension-infrastructure/feature.md)
+**Enjoy tracking your work items with Cascade!**

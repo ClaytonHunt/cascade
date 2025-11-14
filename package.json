@@ -4,10 +4,15 @@
   "description": "Hierarchical planning and kanban workflow for AI-assisted development",
   "version": "0.3.1",
   "publisher": "cascade",
+  "license": "AGPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/lineage"
+    "url": "https://github.com/ClaytonHunt/cascade"
   },
+  "bugs": {
+    "url": "https://github.com/ClaytonHunt/cascade/issues"
+  },
+  "homepage": "https://github.com/ClaytonHunt/cascade#readme",
   "engines": {
     "vscode": "^1.80.0"
   },

@@ -1,0 +1,34 @@
+Cascade - Hierarchical Work Item Tracker
+=========================================
+
+Copyright (C) 2024-2025 Clayton Hunt
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+
+Third-Party Components
+----------------------
+
+This software includes the following third-party components:
+
+1. js-yaml (MIT License)
+   Copyright (c) 2011-2015 by Vitaly Puzrin
+   https://github.com/nodeca/js-yaml
+
+2. VSCode Extension API (MIT License)
+   Copyright (c) Microsoft Corporation
+   https://code.visualstudio.com/api
+
+For complete license information of dependencies, see the node_modules
+directory or run: npm list --long

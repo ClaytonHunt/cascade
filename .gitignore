@@ -1,8 +1,28 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 *.vsix
-.vscode-test/
-*.log
-.DS_Store
 
+# Testing
+.vscode-test/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Cascade work items (for development)
 .cascade/
+
+# Temporary files
+*.tmp
+*.bak
