@@ -6,13 +6,13 @@
     "completed": 0,
     "in_progress": 1,
     "planned": 0,
-    "percentage": 83
+    "percentage": 95
   },
   "children": {
     "E0001": {
       "status": "in-progress",
-      "progress": 83
+      "progress": 95
     }
   },
-  "updated": "2025-11-06T20:23:26.053Z"
+  "updated": "2025-11-12T20:18:45.463Z"
 }

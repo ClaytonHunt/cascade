@@ -25,7 +25,9 @@ export class CascadeExtension {
   private propagationEngine: StatePropagationEngine;
   private treeProvider: CascadeTreeProvider | null = null;
   private treeView: vscode.TreeView<any> | null = null;
-  private watcher: vscode.FileSystemWatcher | null = null;
+  private stateWatcher: vscode.FileSystemWatcher | null = null;
+  private markdownWatcher: vscode.FileSystemWatcher | null = null;
+  private registryWatcher: vscode.FileSystemWatcher | null = null;
   private outputChannel: vscode.OutputChannel;
 
   // Debouncing for file changes
@@ -130,31 +132,64 @@ export class CascadeExtension {
   private setupFileWatcher(context: vscode.ExtensionContext): void {
     this.log('Setting up file watcher...');
 
-    // Watch pattern: **/.cascade/**/state.json
-    const pattern = new vscode.RelativePattern(this.cascadeDir, '**/state.json');
-    this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    // Watcher 1: state.json files (for state propagation)
+    const statePattern = new vscode.RelativePattern(this.cascadeDir, '**/state.json');
+    this.stateWatcher = vscode.workspace.createFileSystemWatcher(statePattern);
 
-    // Watch for state.json changes
-    this.watcher.onDidChange(uri => {
+    this.stateWatcher.onDidChange(uri => {
       this.handleStateChange(uri);
     });
 
-    // Watch for new state.json files
-    this.watcher.onDidCreate(uri => {
+    this.stateWatcher.onDidCreate(uri => {
       this.log(`New state file created: ${path.basename(path.dirname(uri.fsPath))}/state.json`);
       this.handleStateChange(uri);
     });
 
-    // Watch for deleted state.json files
-    this.watcher.onDidDelete(uri => {
+    this.stateWatcher.onDidDelete(uri => {
       this.log(`State file deleted: ${path.basename(path.dirname(uri.fsPath))}/state.json`);
-      // Could trigger validation or warning
+      this.handleStructureChange('state.json deleted');
     });
 
-    context.subscriptions.push(this.watcher);
+    context.subscriptions.push(this.stateWatcher);
+
+    // Watcher 2: Markdown files (for new/deleted work items)
+    const markdownPattern = new vscode.RelativePattern(this.cascadeDir, '**/*.md');
+    this.markdownWatcher = vscode.workspace.createFileSystemWatcher(markdownPattern);
+
+    this.markdownWatcher.onDidCreate(uri => {
+      const relativePath = path.relative(this.cascadeDir, uri.fsPath);
+      this.log(`📄 New markdown file created: ${relativePath}`);
+      this.handleStructureChange('markdown file created');
+    });
+
+    this.markdownWatcher.onDidDelete(uri => {
+      const relativePath = path.relative(this.cascadeDir, uri.fsPath);
+      this.log(`🗑️  Markdown file deleted: ${relativePath}`);
+      this.handleStructureChange('markdown file deleted');
+    });
+
+    this.markdownWatcher.onDidChange(uri => {
+      // Markdown content changes don't affect structure, but log for debugging
+      const relativePath = path.relative(this.cascadeDir, uri.fsPath);
+      this.log(`📝 Markdown file changed: ${relativePath}`);
+    });
+
+    context.subscriptions.push(this.markdownWatcher);
+
+    // Watcher 3: work-item-registry.json (for new work items added by CARL)
+    const registryPath = path.join(this.cascadeDir, 'work-item-registry.json');
+    const registryPattern = new vscode.RelativePattern(this.cascadeDir, 'work-item-registry.json');
+    this.registryWatcher = vscode.workspace.createFileSystemWatcher(registryPattern);
+
+    this.registryWatcher.onDidChange(uri => {
+      this.log(`📋 Registry file changed: work-item-registry.json`);
+      this.handleRegistryChange(uri);
+    });
+
+    context.subscriptions.push(this.registryWatcher);
 
     this.log(`✓ File watcher active`);
-    this.log(`  Pattern: **/state.json in ${this.cascadeDir}`);
+    this.log(`  Watching: **/state.json, **/*.md, work-item-registry.json`);
     this.log(`  Debounce: ${this.DEBOUNCE_MS}ms`);
   }
 
@@ -209,6 +244,97 @@ export class CascadeExtension {
     }, this.DEBOUNCE_MS);
 
     this.debouncers.set(statePath, timeout);
+  }
+
+  /**
+   * Handle structural changes (new/deleted work items)
+   * Triggers TreeView refresh and validation
+   */
+  private handleStructureChange(reason: string): void {
+    const debounceKey = 'structure-change';
+
+    this.log(`🔄 Structure change detected: ${reason} (debouncing ${this.DEBOUNCE_MS}ms)`);
+
+    // Clear existing debouncer
+    if (this.debouncers.has(debounceKey)) {
+      clearTimeout(this.debouncers.get(debounceKey)!);
+      this.log(`   Clearing previous debounce timer`);
+    }
+
+    // Setup new debounced refresh
+    const timeout = setTimeout(async () => {
+      try {
+        this.log(`🔄 Processing structure change: ${reason}`);
+
+        // Reload registry to pick up new/deleted items
+        const registry = await this.registryManager.loadRegistry();
+        const itemCount = Object.keys(registry.work_items).length;
+        this.log(`   Registry reloaded: ${itemCount} items`);
+
+        // Refresh TreeView
+        if (this.treeProvider) {
+          await this.treeProvider.refresh();
+          this.log(`   TreeView refreshed`);
+        } else {
+          this.log(`   ⚠️  TreeProvider not initialized`);
+        }
+
+        this.log(`✓ Structure change handled: ${reason}`);
+
+      } catch (error) {
+        this.log(`❌ Structure change handling failed: ${error}`);
+      } finally {
+        this.debouncers.delete(debounceKey);
+      }
+    }, this.DEBOUNCE_MS);
+
+    this.debouncers.set(debounceKey, timeout);
+  }
+
+  /**
+   * Handle registry changes (work-item-registry.json modified)
+   * Reloads registry and refreshes TreeView
+   */
+  private handleRegistryChange(uri: vscode.Uri): void {
+    const debounceKey = 'registry-change';
+
+    this.log(`🔄 Registry change detected (debouncing ${this.DEBOUNCE_MS}ms)`);
+
+    // Clear existing debouncer
+    if (this.debouncers.has(debounceKey)) {
+      clearTimeout(this.debouncers.get(debounceKey)!);
+      this.log(`   Clearing previous debounce timer`);
+    }
+
+    // Setup new debounced refresh
+    const timeout = setTimeout(async () => {
+      try {
+        this.log(`🔄 Processing registry change...`);
+
+        // Reload registry
+        const registry = await this.registryManager.loadRegistry();
+        const itemCount = Object.keys(registry.work_items).length;
+        this.log(`   Registry reloaded: ${itemCount} work items`);
+
+        // Refresh TreeView
+        if (this.treeProvider) {
+          await this.treeProvider.refresh();
+          this.log(`   TreeView refreshed`);
+        } else {
+          this.log(`   ⚠️  TreeProvider not initialized`);
+        }
+
+        this.log(`✓ Registry change handled successfully`);
+
+      } catch (error) {
+        this.log(`❌ Registry reload failed: ${error}`);
+        vscode.window.showErrorMessage(`Cascade: Registry reload failed: ${error}`);
+      } finally {
+        this.debouncers.delete(debounceKey);
+      }
+    }, this.DEBOUNCE_MS);
+
+    this.debouncers.set(debounceKey, timeout);
   }
 
   /**
@@ -283,10 +409,20 @@ export class CascadeExtension {
       this.treeView = null;
     }
 
-    // Dispose watcher
-    if (this.watcher) {
-      this.watcher.dispose();
-      this.watcher = null;
+    // Dispose watchers
+    if (this.stateWatcher) {
+      this.stateWatcher.dispose();
+      this.stateWatcher = null;
+    }
+
+    if (this.markdownWatcher) {
+      this.markdownWatcher.dispose();
+      this.markdownWatcher = null;
+    }
+
+    if (this.registryWatcher) {
+      this.registryWatcher.dispose();
+      this.registryWatcher = null;
     }
 
     this.log('✓ Cascade extension deactivated');
